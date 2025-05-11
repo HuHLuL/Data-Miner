@@ -17,7 +17,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
 
     async with async_playwright() as p:
         # 爬虫设置
-        type = input("使用新的google浏览器 请输入1\n" "使用本地google浏览器 请输入2\n")
+        type = input("使用新的google浏览器 请输入1 | Using new google browser, enter 1\n" "使用本地google浏览器 请输入2 | Using local google browser, enter 2\n")
         if type == "1":
             browser = await p.chromium.launch(headless=False, # 可设为 False 调试
             args = ["--disable-blink-features=AutomationControlled"], # 隐藏webdriver特征
@@ -56,7 +56,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                 elif success_login == 1: # 已成功登录
                     await page.goto(post_url)
                     await asyncio.sleep(random.uniform(2, 5))
-                print(f"\n正在抓取帖子: {post_url}")
+                print(f"\n正在抓取帖子: {post_url} | Currently crawling: {post_url}")
 
                 # 获取网页标题 并移除非法字符
                 title = await page.title()
@@ -69,23 +69,23 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                 # 获取该问题详情
                 detail_button = page.locator("button.Button.QuestionRichText-more.FEfUrdfMIKpQDJDqkjte.Button--plain.fEPKGkUK5jyc4fUuT0QP").first
                 if await detail_button.count() > 0:
-                    print("已成功爬取该问题详情")
+                    print("已成功爬取该问题详情 | Already crawled description")
                     await detail_button.click()
                     # 获取详情信息
                     detail = page.locator("span.RichText.ztext.css-1yl6ec1").first
                     detail_text = (await detail.inner_text()).strip()
                 else:
-                    print("该问题没有详细描述")
+                    print("该问题没有详细描述 | No description")
                     detail_text = ""
 
                 # 判定 全部回答按钮是否存在，若存在则点击
-                print("\n'查看全部回答'按钮是否存在")
+                print("\n'查看全部回答'按钮是否存在 | Check whether 'All Answers' button exists")
                 all_comments_button = page.locator("div.Card.ViewAll a.QuestionMainAction.ViewAll-QuestionMainAction").first
                 if await all_comments_button.count() == 1:
                     await all_comments_button.click()
-                    print("\t存在，已自动点击")
+                    print("\t存在，已自动点击 | Exists, already clicked button" )
                 else:
-                    print("\t不存在，已加载全部内容")
+                    print("\t不存在，已加载全部内容 | Not exist")
 
                 # 滚动网页, 根据所需的最大回答数，
                 comment_reply_elements= await scroll_based_comments(page, max_answers_num)
@@ -96,10 +96,10 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                 for comment_reply in comment_reply_elements: # 遍历该问题的每个回答
                     # 当前正在爬取的回答的编号
                     if answers_num == max_answers_num:
-                        print(f"\n设定爬取{max_answers_num}个回答，已完成爬取{answers_num}个回答，任务已完成")
+                        print(f"\n设定爬取{max_answers_num}个回答，已完成爬取{answers_num}个回答，任务已完成 | Mission complete")
                         break
                     answers_num += 1
-                    print(f"\n正在爬取第{answers_num}个回答")
+                    print(f"\n正在爬取第{answers_num}个回答 | Answer {answers_num}")
 
                     # 获取层主评论
                     comment = comment_reply.locator("div.css-376mun").first  # comment尽管只有一个，但.all()输出的是一个数组，数组是没有.inner_text()方法的。只需第一个.first (属性非方法)
@@ -128,10 +128,10 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                     if await reply_window.count() > 0:
                         comment_reply = reply_window # comment_reply为弹窗位置
                         window_exist = 1
-                        print("以弹窗形式存在)")
+                        print("以弹窗形式存在) | (Comments in popup)")
                     else:
                         window_exist = 0 # comment_reply为默认的每层位置
-                        print("以非弹窗形式存在)")
+                        print("以非弹窗形式存在) | (Comments not in popup)")
 
                     # 判定评论区是否关闭
                     await page.wait_for_timeout(500)  # 留时间给评论区加载，否则程序运行速度往往快于评论区加载速度，导致"评论区已关闭"无法被检测到
@@ -166,16 +166,16 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                                 each_secondary_reply_text = (await each_secondary_reply.inner_text()).strip()
                                 replys_to_main_reply.append(each_secondary_reply_text)  # 依次存入单个主回复的回复
                             reply_comments.append(replys_to_main_reply)  # 存入所有主回复的回复的列表
-                        print(f"\t已成功爬取回答，及其{replys_num}个回复")
+                        print(f"\t已成功爬取回答，及其{replys_num}个回复 | {replys_num} comments")
 
                     # 若为弹窗模式显示回复，实现关闭弹窗
                     if window_exist == 1:
                         close_button = page.locator("div.css-1aq8hf9 button[aria-label = '关闭']").first
                         await close_button.click()
                         window_exist = 0
-                        print("\t(弹窗存在，已关闭弹窗)")
+                        print("\t(弹窗存在，已关闭弹窗) | (Close popup)")
                     else:
-                        print("\t(弹窗不存在，无需关闭弹窗)")
+                        print("\t(弹窗不存在，无需关闭弹窗) | (No popup to close)")
 
                     # 整合存储以上信息
                     if main_comment:
@@ -184,7 +184,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                             "comment": main_comment,
                             "replys": reply_comments
                         })
-                        print(f"第{answers_num}个回答已完成爬取")
+                        print(f"第{answers_num}个回答已完成爬取 | Answer {answers_num} complete")
 
                     await asyncio.sleep(1)
 
@@ -200,7 +200,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
 
             df = pd.DataFrame(comments_data)
             df.to_csv(f"data/{safe_title}.csv", mode='a', index=False, encoding="utf-8-sig")
-            print(f"CSV文件已生成：{safe_title}.csv")
+            print(f"CSV文件已生成：{safe_title}.csv | Generate CSV file")
 
             # 列表清空以存储下一帖子内容
             comments_data = []
@@ -208,7 +208,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
         # 随机等待降低风险 在爬不同帖子间
         await asyncio.sleep(random.uniform(2,4))
 
-        close = input("任务已结束，关闭浏览器请输入1\n")
+        close = input("任务已结束，关闭浏览器请输入1 | Enter 1 to close browser\n")
         if close == 1:
             await context.close()
 
@@ -217,4 +217,4 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
 if __name__ == "__main__":
     file_path = r"D:\pycharm_code\pythonProject\Web_Crawler\websites.txt"
     urls = read_urls_from_file(file_path)
-    asyncio.run(scrape_zhihu_comments(url_list=urls, max_answers_num=15))
+    asyncio.run(scrape_zhihu_comments(url_list=urls, max_answers_num=10))

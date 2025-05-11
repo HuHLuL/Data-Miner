@@ -13,7 +13,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
 
     async with async_playwright() as p:
         # 爬虫设置
-        type = input("使用新的google浏览器 请输入1\n" "使用本地google浏览器 请输入2\n")
+        type = input("使用新的google浏览器 请输入1 | Using new google browser, enter 1\n" "使用本地google浏览器 请输入2 | Using local google browser, enter 2\n")
         if type == "1":
             browser = await p.chromium.launch(headless=False)  # 可设为 False 调试
             context = await browser.new_context(
@@ -21,10 +21,17 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
             )
         elif type == "2":
             context = await p.chromium.launch_persistent_context(
-                user_data_dir=r"C:\Users\Hu LuLu\AppData\Local\Google\Chrome\User Data",
+                user_data_dir=r"C:\Users\Hu LuLu\AppData\Local\Google\Chrome\playwrightProfile",
                 headless=False,
                 executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe",  # 指定你的 chrome 路径
-                args=["--profile-directory=Default"],  # 指定使用的配置文件，比如 Default
+                args=["--profile-directory=Default",  # 指定使用的配置文件，比如 上面user_data_dir下的Default文件夹
+                      "--disable-blink-features=AutomationControlled",  # 隐藏webdriver特征
+                      ],
+                ignore_default_args=["--enable-automation"]
+                # user_data_dir=r"C:\Users\Hu LuLu\AppData\Local\Google\Chrome\User Data",
+                # headless=False,
+                # executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe",  # 指定你的 chrome 路径
+                # args=["--profile-directory=Default"],  # 指定使用的配置文件，比如 Default
             )
         else:
             print("输入错误，未能成功初始化context")
@@ -33,7 +40,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
         success_login = 0
         # 遍历每个帖子
         for post_base_url in url_list:
-            print(f"正在抓取帖子: {post_base_url}")
+            print(f"正在抓取帖子: {post_base_url} | Crawling post: {post_base_url}")
             for page_num in range(1, max_pages_per_post + 1):
                 post_url = f"{post_base_url}?pn={page_num}"
                 try:
@@ -54,7 +61,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
                     all_page_num = await page.locator("li.l_pager.pager_theme_4.pb_list_pager a").all()
                     all_page_num = len(all_page_num) - 1
                     if page_num > all_page_num:
-                        print(f"第 {page_num} 页无评论，跳出")
+                        print(f"第 {page_num} 页无评论，跳出 | The {page_num} has no comments, exit")
                         break
 
                     await human_like_scroll(page)
@@ -92,9 +99,9 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
                                 "comment": main_comment,
                                 "replys": reply_comments
                             })
-                            print(f"第{floor_num}层已完成爬取")
+                            print(f"第{floor_num}层已完成爬取 |  Floor {floor_num} crawling completed")
 
-                    print(f"第 {page_num} 页完成，抓到 {len(comment_reply_elements)} 条评论")
+                    print(f"第 {page_num} 页完成，抓到 {len(comment_reply_elements)} 条评论 | Page {page_num} completed, total {len(comment_reply_elements)} comments")
 
                 except Exception as e:
                     print(f"抓取第 {page_num} 页失败: {e}")
@@ -107,7 +114,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
 
             df = pd.DataFrame(comments_data)
             df.to_csv(f"data/{safe_title}.csv", mode='a', index=False, encoding="utf-8-sig")
-            print(f"CSV文件已生成：{safe_title}.csv")
+            print(f"CSV文件已生成：{safe_title}.csv | Generate CSV file: {safe_title}.csv")
 
             # 列表清空以存储下一帖子内容
             comments_data = []
@@ -115,7 +122,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
             # 随机等待降低风险
             await asyncio.sleep(random.uniform(2, 4))
 
-        close = input("任务已结束，关闭浏览器请输入1\n")
+        close = input("任务已结束，关闭浏览器请输入1\n | Task complete, close browser please enter 1")
         if close == 1:
             await context.close()
 
@@ -124,4 +131,4 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
 if __name__ == "__main__":
     file_path = r"D:\pycharm_code\pythonProject\Web_Crawler\websites.txt"
     urls = read_urls_from_file(file_path)
-    asyncio.run(scrape_tieba_comments(url_list=urls, max_pages_per_post=10))
+    asyncio.run(scrape_tieba_comments(url_list=urls, max_pages_per_post=2))

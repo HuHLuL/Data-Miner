@@ -29,9 +29,9 @@ async def human_like_scroll(page):
 
 # 百度贴吧 手机号密码自动登录
 async def auto_login(page):
-    need_for_auto_login = input("\n贴吧自动登录请输入a，其他手动登录\n")
+    need_for_auto_login = input("\n贴吧自动登录请输入a，其他手动登录 | Enter 'a' to auto login Tieba\n")
     if need_for_auto_login == "a":
-        print("运行自动登录程序")
+        print("运行自动登录程序|Run the Tieba auto-login program")
 
         try:
             # 等待选择器匹配元素出现 等待初始登录弹窗出现
@@ -52,9 +52,9 @@ async def auto_login(page):
         except:
             print("自动登录失败，请手动登录")
     else:
-        print("请手动登录")
+        print("请手动登录 | Please manual login")
 
-    judge = input("\n已完成登录请输入1\n")
+    judge = input("\n已完成登录请输入1 | Complete website login please enter 1\n")
     if judge==1:
         pass
 
@@ -62,11 +62,11 @@ async def auto_login(page):
 
 # 知乎基于评论数量的页面滚动加载
 async def scroll_based_comments(page, max_answer_num):
-    print(f"\n开始滚动加载页面，所需{max_answer_num}个回答")
+    print(f"\n开始滚动加载页面，所需{max_answer_num}个回答 | Start loading the page, expecting {max_answer_num} answers")
     await page.wait_for_selector("div.List-item") # div.ContentItem.AnswerItem
     comment_reply = await page.locator("div.List-item").all()
     num = len(comment_reply)
-    print(f"已加载{num}个回答")
+    print(f"已加载{num}个回答 | {num} answers")
     current_y = 0
     max_answer_num = max_answer_num + 2 # 知乎在滚动网页动态加载时，有时会瞬间减少已刷新的回答数2-3个。比如刚开始刷新到了共10个，瞬间减少到8个。故这里加3，以防止需要爬10个问题时，才刷新了8个的情况
     count = 0
@@ -84,17 +84,17 @@ async def scroll_based_comments(page, max_answer_num):
         last_num = num # 记录上一个已加载问题的数量
         num = len(comment_reply)
         if not (last_num < num):
-            print(f"已加载{num}个回答")
+            print(f"已加载{num}个回答 | {num} answers")
 
         # 加载到底部退出的情况
         bottom_button = page.locator("button.Button.QuestionAnswers-answerButton.FEfUrdfMIKpQDJDqkjte.Button--blue.Button--spread.JmYzaky7MEPMFcJDLNMG.GMKy5J1UWc7y8NF_V8YA:has-text('写回答')")
         if await bottom_button.count() > 0:
-            print(f"已加载到底部无法进一步获取，共加载{num}个回答")
+            print(f"已加载到底部无法进一步获取，共加载{num}个回答 | Reach the bottom, total load {num} answers")
             return comment_reply
 
         # 已加载回答数 > 目标回答数 退出
         if num >= max_answer_num:
-            print(f"滚动加载完成，共加载{num}个回答")
+            print(f"滚动加载完成，共加载{num}个回答 | Load completed, total load {num} answers")
             return comment_reply
   
 
