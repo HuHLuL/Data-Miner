@@ -54,7 +54,7 @@ async def auto_login(page):
     else:
         print("请手动登录 | Please manual login")
 
-    judge = input("\n已完成登录请输入1 | Complete website login please enter 1\n")
+    judge = input("\n已完成登录请输入1 | If Login complete, please enter 1\n")
     if judge==1:
         pass
 

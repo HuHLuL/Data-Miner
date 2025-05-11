@@ -4,6 +4,8 @@ import random
 import re
 import pandas as pd
 from playwright.async_api import async_playwright
+from sqlalchemy.sql.operators import all_op
+
 from Assistant_Methods import read_urls_from_file
 from Assistant_Methods import human_like_scroll
 from Assistant_Methods import auto_login
@@ -28,10 +30,6 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
                       "--disable-blink-features=AutomationControlled",  # 隐藏webdriver特征
                       ],
                 ignore_default_args=["--enable-automation"]
-                # user_data_dir=r"C:\Users\Hu LuLu\AppData\Local\Google\Chrome\User Data",
-                # headless=False,
-                # executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe",  # 指定你的 chrome 路径
-                # args=["--profile-directory=Default"],  # 指定使用的配置文件，比如 Default
             )
         else:
             print("输入错误，未能成功初始化context")
@@ -40,12 +38,20 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
         success_login = 0
         # 遍历每个帖子
         for post_base_url in url_list:
-            print(f"正在抓取帖子: {post_base_url} | Crawling post: {post_base_url}")
+            await page.goto(post_base_url)
+            print(f"\n正在抓取帖子: {post_base_url} | Crawling post: {post_base_url}")
+
+            # 读取当前帖子的总页数，
+            all_page_num = page.locator("ul.l_posts_num li.l_reply_num span.red").nth(1)
+            all_page_num = (await all_page_num.inner_text()).strip()
+            all_page_num = int(all_page_num)
+            print(f"共{all_page_num}页 | Total {all_page_num} pages")
+
             for page_num in range(1, max_pages_per_post + 1):
                 post_url = f"{post_base_url}?pn={page_num}"
                 try:
                     # 进行网页登录操作
-                    if success_login == 0:  # 未成功登录
+                    if success_login == 0:  # 进行首次登录 或者 未成功登录
                         # wait_until="commit" 当浏览器接受到http响应头时，立即直接运行后续代码，不用检测该页面是否加载完成。防止出现timeout未加载完报错
                         # 百度的弹窗登录机制：在登录弹窗未关闭或者成功登录前，页面会一直处于未加载完成状态，故无commit的goto定会报错
                         await page.goto(post_url, wait_until="commit")
@@ -58,8 +64,6 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
                         await asyncio.sleep(random.uniform(2, 5))
 
                     # 若当前页数 > 当前帖子总页数 则跳出
-                    all_page_num = await page.locator("li.l_pager.pager_theme_4.pb_list_pager a").all()
-                    all_page_num = len(all_page_num) - 1
                     if page_num > all_page_num:
                         print(f"第 {page_num} 页无评论，跳出 | The {page_num} has no comments, exit")
                         break
@@ -70,7 +74,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
                     title = await page.title()
                     safe_title = re.sub(r'[\\/:*?"<>|]', '_', title)
 
-                    comment_reply_elements = await page.locator("div.l_post").all()
+                    comment_reply_elements = await page.locator("div.p_postlist > div.l_post").all() # 仅div.p_postlist下一级的div.l_post是帖子回复综合体。其孙子集中还有一个div.l_post是广告会报错
                     for comment_reply in comment_reply_elements: # 遍历该页的每层(评论和回复综合体)
                         # 获取层主评论
                         comment = comment_reply.locator("div.d_post_content").first  # comment尽管只有一个，但.all()输出的是一个数组，数组是没有.inner_text()方法的。只需第一个.first (属性非方法)
@@ -114,7 +118,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
 
             df = pd.DataFrame(comments_data)
             df.to_csv(f"data/{safe_title}.csv", mode='a', index=False, encoding="utf-8-sig")
-            print(f"CSV文件已生成：{safe_title}.csv | Generate CSV file: {safe_title}.csv")
+            print(f"CSV文件已生成：{safe_title}.csv | Generate CSV file")
 
             # 列表清空以存储下一帖子内容
             comments_data = []
@@ -122,7 +126,7 @@ async def scrape_tieba_comments(url_list, max_pages_per_post):
             # 随机等待降低风险
             await asyncio.sleep(random.uniform(2, 4))
 
-        close = input("任务已结束，关闭浏览器请输入1\n | Task complete, close browser please enter 1")
+        close = input("\n任务已结束，关闭浏览器请输入1 | Task complete, close browser please enter 1\n")
         if close == 1:
             await context.close()
 
