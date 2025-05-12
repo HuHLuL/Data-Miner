@@ -111,7 +111,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                         await button.click()
                         print("\t(评论按钮已点击", end=' ')
                     else:
-                        print("\t无评论或评论区已关闭")
+                        print("\t无评论或评论区已关闭 | No comments or comment area is closed")
                         # 存储该回答信息
                         if main_comment:
                             comments_data.append({
@@ -119,7 +119,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                                 "comment": main_comment,
                                 "replys": []
                             })
-                            print(f"第{answers_num}个回答已完成爬取")
+                            print(f"第{answers_num}个回答已完成爬取 | Answer {answers_num} complete")
                         # 跳出当前循环，爬取下一回答
                         continue
 
@@ -137,7 +137,7 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
                     await page.wait_for_timeout(500)  # 留时间给评论区加载，否则程序运行速度往往快于评论区加载速度，导致"评论区已关闭"无法被检测到
                     reply_close = comment_reply.locator("text=评论区已关闭") # 或者"div.css-189h5o3"
                     if await reply_close.count() > 0:
-                        print("\t评论区已关闭")
+                        print("\t评论区已关闭 | The comment area is closed")
                         reply_comments = []
                     else: # 评论区未关闭，收集评论
 
@@ -217,4 +217,4 @@ async def scrape_zhihu_comments(url_list, max_answers_num):
 if __name__ == "__main__":
     file_path = r"D:\pycharm_code\pythonProject\Web_Crawler\websites.txt"
     urls = read_urls_from_file(file_path)
-    asyncio.run(scrape_zhihu_comments(url_list=urls, max_answers_num=10))
+    asyncio.run(scrape_zhihu_comments(url_list=urls, max_answers_num=15))
